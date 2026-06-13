@@ -44,11 +44,21 @@ describe('UsersService', () => {
     });
 
     it('throws ConflictException on duplicate', async () => {
-      repo.save.mockRejectedValue(new Error('UNIQUE constraint failed'));
+      const dupError = Object.assign(new Error('UNIQUE constraint failed'), { code: 'SQLITE_CONSTRAINT' });
+      repo.save.mockRejectedValue(dupError);
 
       await expect(
         service.create({ username: 'alice', email: 'alice@example.com' }),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('rethrows non-duplicate errors', async () => {
+      const dbError = Object.assign(new Error('Connection failed'), { code: 'SQLITE_ERROR' });
+      repo.save.mockRejectedValue(dbError);
+
+      await expect(
+        service.create({ username: 'alice', email: 'alice@example.com' }),
+      ).rejects.toThrow('Connection failed');
     });
   });
 

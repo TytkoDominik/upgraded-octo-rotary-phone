@@ -18,8 +18,12 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<User> {
     try {
       return await this.users.save(dto);
-    } catch {
-      throw new ConflictException('Username or email already exists');
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'SQLITE_CONSTRAINT') {
+        throw new ConflictException('Username or email already exists');
+      }
+      throw err;
     }
   }
 
